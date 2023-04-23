@@ -16,9 +16,10 @@ from signal import pause
 
 
 # TODO: These should be passed in at runtime. 
-num_buttons = 1
-pins = [5]
-samples = ['7vacuum.wav']
+num_buttons = 5
+pins = [5, 17, 18, 24, 25]
+samples = ['9 Bar.wav', '11506_woowah_Hooooover.wav', 'hoova002.wav',
+           'Hoover 24.wav', 'you be the leader fin.wav']
 
 buttons = {} # Holds button objects
 threads = {} # Holds threads for each button
@@ -37,7 +38,8 @@ def start_sample(button: int) -> None:
         button (int): 
     """
     print(f"Playing sample {button}.")
-    process = subprocess.Popen(['aplay', samples[buttons]])
+    sample_path = f"/home/pi/hetty-sampler/samples/{samples[button]}"
+    process = subprocess.Popen(['aplay', sample_path])
 
     status = None
     while status is None:
@@ -93,7 +95,7 @@ def setup_sampler() -> None:
         buttons[i].when_deactivated = lambda: handle_button_release(i)
 
 
-if __name__ == "__main":
+if __name__ == "__main__":
     setup_sampler()
     
     print("Running..")
