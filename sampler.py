@@ -48,7 +48,7 @@ def handle_button_release(button):
         threads[button].join()
 
 
-b1.when_activated = lambda: print("Activated")
+b1.when_activated = lambda: handle_button_press(B1)
 b1.when_deactivated = lambda: handle_button_release(B1)
 
 
