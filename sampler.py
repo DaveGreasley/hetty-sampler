@@ -17,9 +17,10 @@ from signal import pause
 
 # TODO: These should be passed in at runtime. 
 num_buttons = 5
-pins = [5, 17, 18, 24, 25]
-samples = ['9 Bar.wav', '11506_woowah_Hooooover.wav', 'hoova002.wav',
-           'Hoover 24.wav', 'you be the leader fin.wav']
+# pins = [11, 12, 18, 22, 13] # 17, 18, 24, 25, 27
+pins = [17, 18, 24, 25, 27]
+samples = ['11506_woowah_Hooooover.wav', 'hoova002.wav',
+           'Hoover 24.wav', 'you be the leader fin.wav', '9 Bar.wav']
 
 buttons = {} # Holds button objects
 threads = {} # Holds threads for each button
@@ -80,19 +81,36 @@ def handle_button_release(button: int) -> None:
         threads[button].join() 
 
 
+def create_button_press_handler(i):
+    def handle():
+        handle_button_press(i)
+
+    return handle
+
+
+def create_button_release_handler(i):
+    def handle():
+        handle_button_release(i)
+
+    return handle
+
+
 def setup_sampler() -> None:
     """
     Perform initial setup of the sampler for the number of configured
     buttons. This creates the Button objects and assigns the listeners
     of the when_activated and when_deactivated events. 
     """
-    for i in range(num_buttons):
-        buttons[i] = Button(pins[i])
+    for i in range(len(pins)):
+        b = Button(pins[i])
+        b.when_activated = create_button_press_handler(i)
+        b.when_deactivated = create_button_release_handler(i)
+
+        buttons[i] = b
         threads[i] = None
         stops[i] = False
 
-        buttons[i].when_activated = lambda: handle_button_press(i)
-        buttons[i].when_deactivated = lambda: handle_button_release(i)
+       
 
 
 if __name__ == "__main__":
