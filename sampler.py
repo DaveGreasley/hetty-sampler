@@ -1,3 +1,4 @@
+#!/usr/bin/python
 """
 A simpler audio sampler that responds to button presses
 from a raspberry pi. 
@@ -9,6 +10,7 @@ releasing the button will stop the sample playing.
 import os
 import subprocess
 from threading import Thread
+from typing import Dict
 import time
 
 from gpiozero import Button
@@ -17,14 +19,13 @@ from signal import pause
 
 # TODO: These should be passed in at runtime. 
 num_buttons = 5
-# pins = [11, 12, 18, 22, 13] # 17, 18, 24, 25, 27
 pins = [17, 18, 24, 25, 27]
 samples = ['11506_woowah_Hooooover.wav', 'hoova002.wav',
-           'Hoover 24.wav', 'you be the leader fin.wav', '9 Bar.wav']
+           'Hoover 24.wav', 'tape Shifter Hoover.wav', '9 Bar.wav']
 
 buttons = {} # Holds button objects
 threads = {} # Holds threads for each button
-stops = {} # Holds stop flags for each button
+processes = {}
 
 
 def start_sample(button: int) -> None:
@@ -32,27 +33,15 @@ def start_sample(button: int) -> None:
     Play a sample depending on the button pressed.
 
     The sample is started as a sub process using the aplay
-    application. We poll the application to know when its
-    completed, stopping the sample if a stop flag is detected.
+    application.
 
     Args:
-        button (int): 
+        button (int): The id of the pressed button
     """
     print(f"Playing sample {button}.")
     sample_path = f"/home/pi/hetty-sampler/samples/{samples[button]}"
-    process = subprocess.Popen(['aplay', sample_path])
-
-    status = None
-    while status is None:
-        status = process.poll()
-        # Listen for the button stop flag which indicates the button has
-        # been released and we should stop the sample playing. 
-        if stops[button]:
-            process.kill()
-
-        time.sleep(0.1)
-
-    stops[button] = False
+    processes[button] = subprocess.Popen(['aplay', sample_path])
+    
     
 
 def handle_button_press(button:int ) -> None: 
@@ -63,8 +52,9 @@ def handle_button_press(button:int ) -> None:
     Args:
         button (int): The id of the pressed button.
     """
-    threads[button] = Thread(target=lambda: start_sample(button))
-    threads[button].start()
+    if threads[button] is None:
+        threads[button] = Thread(target=lambda: start_sample(button))
+        threads[button].start()
 
 
 def handle_button_release(button: int) -> None:
@@ -75,10 +65,10 @@ def handle_button_release(button: int) -> None:
     Args:
         button (int): The id of the released button.  
     """
-    if threads[button] is not None:
-        stops[button] = True
-        # TODO: Test this with multiple simultaneous button presses.
-        threads[button].join() 
+    if processes[button] is not None:
+        processes[button].kill()
+        processes[button] = None
+        threads[button] = None
 
 
 def create_button_press_handler(i):
@@ -108,11 +98,9 @@ def setup_sampler() -> None:
 
         buttons[i] = b
         threads[i] = None
-        stops[i] = False
+        processes[i] = None
 
        
-
-
 if __name__ == "__main__":
     setup_sampler()
     
